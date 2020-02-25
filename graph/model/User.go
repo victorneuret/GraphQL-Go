@@ -2,11 +2,13 @@
 
 package model
 
+import "github.com/jinzhu/gorm"
+
 type NewUser struct {
-	Name string `json:"name"`
+	Name string `json:"name",gorm:"unique"`
 }
 
 type User struct {
-	ID   string `json:"id"`
+	gorm.Model
 	Name string `json:"name"`
 }

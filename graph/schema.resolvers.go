@@ -4,60 +4,86 @@ package graph
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
+	"github.com/victorneuret/graphql-go/ORM"
 	"github.com/victorneuret/graphql-go/graph/generated"
 	"github.com/victorneuret/graphql-go/graph/model"
 )
 
-func (r *articleResolver) User(ctx context.Context, obj *model.Article) (*model.User, error) {
-	return &model.User{ID: obj.UserID, Name: "user " + obj.UserID}, nil
+func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
+	user := ORM.UserByName(input.UserName)
+
+	todo := &model.Todo{
+		Text:     input.Text,
+		Done:     input.Done,
+		UserName: user.Name,
+	}
+
+	ORM.CreateTodo(todo)
+
+	return todo, nil
 }
 
-func (r *mutationResolver) CreateArticle(ctx context.Context, input model.NewArticle) (*model.Article, error) {
-	found := false
-	for _, v := range r.users {
-		if v.ID == input.UserID {
-			found = true
-			break
-		}
-	}
-	if found == false {
-		return nil, errors.New("User " + input.UserID + " not found")
-	}
+func (r *mutationResolver) UpdateTodo(ctx context.Context, input model.UpdateTodo) (*model.Todo, error) {
+	todo := ORM.UpdateTodo(input)
 
-	article := &model.Article{
-		Title:  input.Title,
-		Text:   input.Text,
-		ID:     fmt.Sprintf("%d", len(r.articles)),
-		UserID: input.UserID,
-	}
-	r.articles = append(r.articles, article)
-	return article, nil
+	return todo, nil
+	//iterator := -1
+	//for i, v := range r.todos {
+	//	if v.ID == input.ID {
+	//		iterator = i
+	//		break
+	//	}
+	//}
+	//if iterator == -1 {
+	//	return nil, errors.New("Todo with ID '" + input.ID + "' does not exist")
+	//}
+	//
+	//found := false
+	//for _, v := range r.users {
+	//	if v.ID == input.UserID {
+	//		found = true
+	//		break
+	//	}
+	//}
+	//if found == false {
+	//	return nil, errors.New("User " + input.UserID + " not found")
+	//}
+	//
+	//todo := r.todos[iterator]
+	//
+	//if todo.UserID != input.UserID {
+	//	return nil, errors.New("User " + input.UserID + " Can't modify this todo")
+	//}
+	//
+	//todo = &model.Todo{
+	//	ID:     todo.ID,
+	//	Text:   input.Text,
+	//	Done:   input.Done,
+	//	UserID: todo.UserID,
+	//}
+	//r.todos[iterator] = todo
+	//return todo, nil
 }
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.User, error) {
 	user := &model.User{
-		ID: fmt.Sprintf("%d", len(r.users)),
 		Name: input.Name,
 	}
-	r.users = append(r.users, user)
+	ORM.CreateUser(user)
 	return user, nil
 }
 
-func (r *queryResolver) Articles(ctx context.Context) ([]*model.Article, error) {
-	return r.articles, nil
+func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
+	return ORM.GetTodos(), nil
 }
 
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
-	return r.users, nil
+	return ORM.GetUsers(), nil
 }
 
-func (r *Resolver) Article() generated.ArticleResolver   { return &articleResolver{r} }
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 func (r *Resolver) Query() generated.QueryResolver       { return &queryResolver{r} }
 
-type articleResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
